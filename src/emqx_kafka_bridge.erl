@@ -118,9 +118,9 @@ on_message_delivered(ClientId, Username, Message, _Env) ->
     % io:format("delivered to client(~s/~s): ~s~n", [Username, ClientId, emqttd_message:format(Message)]),
     Event = [{clientid, ClientId},
                 {username, Username},
-                {topic, Message#mqtt_message.topic},
-                {size, byte_size(Message#mqtt_message.payload)},
-                {ts, emqttd_time:now_secs(Message#mqtt_message.timestamp)}],
+                {topic, Message#message.topic},
+                {size, byte_size(Message#message.payload)},
+                {ts, emqttd_time:now_secs(Message#message.timestamp)}],
     produce_kafka_delivered(Event),
     {ok, Message}.
 
@@ -129,9 +129,9 @@ on_message_delivered(ClientId, Username, Message, _Env) ->
 %     Event = [{action, <<"acked">>},
 %                 {from_client_id, ClientId},
 %                 {from_username, Username},
-%                 {topic, Message#mqtt_message.topic},
-%                 {qos, Message#mqtt_message.qos},
-%                 {message, Message#mqtt_message.payload}],
+%                 {topic, Message#message.topic},
+%                 {qos, Message#message.qos},
+%                 {message, Message#message.payload}],
 %     produce_kafka_log(Event),
 %     {ok, Message}.
 
@@ -169,13 +169,13 @@ ekaf_init(_Env) ->
     {ok, _} = application:ensure_all_started(ekaf).
 
 format_payload(Message) ->
-    {ClientId, Username} = format_from(Message#mqtt_message.from),
+    {ClientId, Username} = format_from(Message#message.from),
     Payload = [{clientid, ClientId},
                   {username, Username},
-                  {topic, Message#mqtt_message.topic},
-                  {payload, Message#mqtt_message.payload},
-                  {size, byte_size(Message#mqtt_message.payload)},
-                  {ts, emqttd_time:now_secs(Message#mqtt_message.timestamp)}],
+                  {topic, Message#message.topic},
+                  {payload, Message#message.payload},
+                  {size, byte_size(Message#message.payload)},
+                  {ts, emqttd_time:now_secs(Message#message.timestamp)}],
     {ok, Payload}.
 
 format_from({ClientId, Username}) ->
