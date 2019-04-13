@@ -28,12 +28,11 @@
 
 -export([on_client_connected/4, on_client_disconnected/3]).
 
-% -export([on_client_subscribe/4, on_client_unsubscribe/4]).
+-export([on_client_subscribe/4, on_client_unsubscribe/4]).
 
 % -export([on_session_created/3, on_session_subscribed/4, on_session_unsubscribed/4, on_session_terminated/4]).
 
--export([on_message_publish/2, on_message_delivered/3, on_message_acked/3]).
-
+-export([on_message_publish/2, on_message_delivered/3]).
 
 %% Called when the plugin application start
 load(Env) ->
