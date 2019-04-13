@@ -46,9 +46,9 @@ load(Env) ->
     % emqx:hook('session.subscribed', fun ?MODULE:on_session_subscribed/4, [Env]),
     % emqx:hook('session.unsubscribed', fun ?MODULE:on_session_unsubscribed/4, [Env]),
     % emqx:hook('session.terminated', fun ?MODULE:on_session_terminated/4, [Env]),
+    % emqx:hook('message.acked', fun ?MODULE:on_message_acked/3, [Env]),
     emqx:hook('message.publish', fun ?MODULE:on_message_publish/2, [Env]),
-    emqx:hook('message.delivered', fun ?MODULE:on_message_delivered/3, [Env]),
-    % emqx:hook('message.acked', fun ?MODULE:on_message_acked/3, [Env]).
+    emqx:hook('message.delivered', fun ?MODULE:on_message_delivered/3, [Env]).
 
 on_client_connected(#{client_id := ClientId, username := Username}, _ConnAck, _ConnAttrs, _Env) ->
      % io:format("client ~s/~s will connected: ~w.~n", [ClientId, Username, ConnAck]),
