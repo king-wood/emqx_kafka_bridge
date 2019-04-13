@@ -32,7 +32,7 @@
 
 % -export([on_session_created/3, on_session_subscribed/4, on_session_unsubscribed/4, on_session_terminated/4]).
 
--export([on_message_publish/2, on_message_delivered/3]).
+-export([on_message_publish/2, on_message_delivered/4]).
 
 %% Called when the plugin application start
 load(Env) ->
@@ -49,15 +49,15 @@ load(Env) ->
     emqx:hook('message.publish', fun ?MODULE:on_message_publish/2, [Env]),
     emqx:hook('message.delivered', fun ?MODULE:on_message_delivered/4, [Env]).
 
-on_client_connected(#{client_id := ClientId, username := Username}, _ConnAck, _ConnAttrs, _Env) ->
-     % io:format("client ~s/~s will connected: ~w.~n", [ClientId, Username, ConnAck]),
+on_client_connected(ConnAck, Client = #mqtt_client{client_id = ClientId, username = Username}, _Env) ->
+    % io:format("client ~s/~s will connected: ~w.~n", [ClientId, Username, ConnAck]),
     Event = [{clientid, ClientId},
                 {username, Username},
                 {ts, timestamp()}],
     produce_kafka_connected(Event),
     {ok, Client}.
 
-on_client_disconnected(#{client_id := ClientId, username := Username}, _Reason, _Env) ->
+on_client_disconnected(Reason, _Client = #mqtt_client{client_id = ClientId, username = Username}, _Env) ->
     % io:format("client ~s/~s will connected: ~w~n", [ClientId, Username, Reason]),
     Event = [{clientid, ClientId},
                 {username, Username},
