@@ -26,7 +26,7 @@
 
 %% Hooks functions
 
--export([on_client_connected/3, on_client_disconnected/3]).
+-export([on_client_connected/4, on_client_disconnected/3]).
 
 -export([on_client_subscribe/4, on_client_unsubscribe/4]).
 
@@ -37,7 +37,7 @@
 %% Called when the plugin application start
 load(Env) ->
     ekaf_init([Env]),
-    emqx:hook('client.connected', fun ?MODULE:on_client_connected/3, [Env]),
+    emqx:hook('client.connected', fun ?MODULE:on_client_connected/4, [Env]),
     emqx:hook('client.disconnected', fun ?MODULE:on_client_disconnected/3, [Env]),
     emqx:hook('client.subscribe', fun ?MODULE:on_client_subscribe/4, [Env]),
     emqx:hook('client.unsubscribe', fun ?MODULE:on_client_unsubscribe/4, [Env]),
@@ -49,7 +49,7 @@ load(Env) ->
     emqx:hook('message.publish', fun ?MODULE:on_message_publish/2, [Env]),
     emqx:hook('message.delivered', fun ?MODULE:on_message_delivered/4, [Env]).
 
-on_client_connected(ConnAck, Client = #mqtt_client{client_id = ClientId, username = Username}, _Env) ->
+on_client_connected(#{client_id := ClientId, username := Username}, _ConnAck, _ConnAttrs, _Env) ->
     % io:format("client ~s/~s will connected: ~w.~n", [ClientId, Username, ConnAck]),
     Event = [{clientid, ClientId},
                 {username, Username},
@@ -57,7 +57,7 @@ on_client_connected(ConnAck, Client = #mqtt_client{client_id = ClientId, usernam
     produce_kafka_connected(Event),
     {ok, Client}.
 
-on_client_disconnected(Reason, _Client = #mqtt_client{client_id = ClientId, username = Username}, _Env) ->
+on_client_disconnected(#{client_id := ClientId, username := Username}, _Reason, _Env) ->
     % io:format("client ~s/~s will connected: ~w~n", [ClientId, Username, Reason]),
     Event = [{clientid, ClientId},
                 {username, Username},
@@ -190,7 +190,7 @@ a2b(A) -> erlang:atom_to_binary(A, utf8).
 
 %% Called when the plugin application stop
 unload() ->
-    emqx:unhook('client.connected', fun ?MODULE:on_client_connected/3),
+    emqx:unhook('client.connected', fun ?MODULE:on_client_connected/4),
     emqx:unhook('client.disconnected', fun ?MODULE:on_client_disconnected/3),
     emqx:unhook('client.subscribe', fun ?MODULE:on_client_subscribe/4),
     emqx:unhook('client.unsubscribe', fun ?MODULE:on_client_unsubscribe/4),
