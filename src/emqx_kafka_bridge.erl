@@ -16,63 +16,55 @@
 %% limitations under the License.
 %%--------------------------------------------------------------------
 
--module(emq_kafka_bridge).
+-module(emqx_kafka_bridge).
 
--include("emq_kafka_bridge.hrl").
+-include("emqx_kafka_bridge.hrl").
 
--include_lib("emqttd/include/emqttd.hrl").
-
--import(string,[concat/2]).
--import(lists,[nth/2]). 
+-include_lib("emqx/include/emqx.hrl").
 
 -export([load/1, unload/0]).
 
 %% Hooks functions
 
--export([on_client_connected/3, on_client_disconnected/3]).
+-export([on_client_connected/4, on_client_disconnected/3]).
 
--export([on_client_subscribe/4, on_client_unsubscribe/4]).
+% -export([on_client_subscribe/4, on_client_unsubscribe/4]).
 
 % -export([on_session_created/3, on_session_subscribed/4, on_session_unsubscribed/4, on_session_terminated/4]).
 
-% -export([on_message_publish/2]).
-
-% -export([on_message_publish/2, on_message_delivered/4, on_message_acked/4]).
--export([on_message_publish/2, on_message_delivered/4]).
+-export([on_message_publish/2, on_message_delivered/3, on_message_acked/3]).
 
 
 %% Called when the plugin application start
 load(Env) ->
     ekaf_init([Env]),
-    emqttd:hook('client.connected', fun ?MODULE:on_client_connected/3, [Env]),
-    emqttd:hook('client.disconnected', fun ?MODULE:on_client_disconnected/3, [Env]),
-    emqttd:hook('client.subscribe', fun ?MODULE:on_client_subscribe/4, [Env]),
-    emqttd:hook('client.unsubscribe', fun ?MODULE:on_client_unsubscribe/4, [Env]),
-    % emqttd:hook('session.created', fun ?MODULE:on_session_created/3, [Env]),
-    % emqttd:hook('session.subscribed', fun ?MODULE:on_session_subscribed/4, [Env]),
-    % emqttd:hook('session.unsubscribed', fun ?MODULE:on_session_unsubscribed/4, [Env]),
-    % emqttd:hook('session.terminated', fun ?MODULE:on_session_terminated/4, [Env]),
-    emqttd:hook('message.publish', fun ?MODULE:on_message_publish/2, [Env]),
-    emqttd:hook('message.delivered', fun ?MODULE:on_message_delivered/4, [Env]).
-    % emqttd:hook('message.acked', fun ?MODULE:on_message_acked/4, [Env]).
+    emqx:hook('client.connected', fun ?MODULE:on_client_connected/4, [Env]),
+    emqx:hook('client.disconnected', fun ?MODULE:on_client_disconnected/3, [Env]),
+    emqx:hook('client.subscribe', fun ?MODULE:on_client_subscribe/4, [Env]),
+    emqx:hook('client.unsubscribe', fun ?MODULE:on_client_unsubscribe/4, [Env]),
+    % emqx:hook('session.created', fun ?MODULE:on_session_created/3, [Env]),
+    % emqx:hook('session.subscribed', fun ?MODULE:on_session_subscribed/4, [Env]),
+    % emqx:hook('session.unsubscribed', fun ?MODULE:on_session_unsubscribed/4, [Env]),
+    % emqx:hook('session.terminated', fun ?MODULE:on_session_terminated/4, [Env]),
+    emqx:hook('message.publish', fun ?MODULE:on_message_publish/2, [Env]),
+    emqx:hook('message.delivered', fun ?MODULE:on_message_delivered/3, [Env]),
+    % emqx:hook('message.acked', fun ?MODULE:on_message_acked/3, [Env]).
 
-
-on_client_connected(ConnAck, Client = #mqtt_client{client_id = ClientId, username = Username}, _Env) ->
-    % io:format("client ~s/~s will connected: ~w.~n", [ClientId, Username, ConnAck]),
+on_client_connected(#{client_id := ClientId, username := Username}, _ConnAck, _ConnAttrs, _Env) ->
+     % io:format("client ~s/~s will connected: ~w.~n", [ClientId, Username, ConnAck]),
     Event = [{clientid, ClientId},
                 {username, Username},
                 {ts, timestamp()}],
     produce_kafka_connected(Event),
     {ok, Client}.
 
-on_client_disconnected(Reason, _Client = #mqtt_client{client_id = ClientId, username = Username}, _Env) ->
+on_client_disconnected(#{client_id := ClientId, username := Username}, _Reason, _Env) ->
     % io:format("client ~s/~s will connected: ~w~n", [ClientId, Username, Reason]),
     Event = [{clientid, ClientId},
                 {username, Username},
                 {ts, timestamp()}],
     produce_kafka_disconnected(Event),
     ok.
-
 
 on_client_subscribe(ClientId, Username, TopicTable, _Env) ->
     % io:format("client(~s/~s) will subscribe: ~p~n", [Username, ClientId, TopicTable]),
@@ -115,13 +107,13 @@ on_client_unsubscribe(ClientId, Username, TopicTable, _Env) ->
 %     produce_kafka_log(Event).
 
 %% transform message and return
-on_message_publish(Message = #mqtt_message{topic = <<"$SYS/", _/binary>>}, _Env) ->
-    % io:format("message publish: ~p.", [topic]),
+on_message_publish(Message = #message{topic = <<"$SYS/", _/binary>>}, _Env) ->
     {ok, Message};
 
 on_message_publish(Message, _Env) ->
+    % io:format("Publish message ~s~n", [emqx_message:format(Message)]),
     {ok, Payload} = format_payload(Message),
-    produce_kafka_publish(Payload), 
+    produce_kafka_payload(Payload),
     {ok, Message}.
 
 on_message_delivered(ClientId, Username, Message, _Env) ->
@@ -146,11 +138,11 @@ on_message_delivered(ClientId, Username, Message, _Env) ->
 %     {ok, Message}.
 
 ekaf_init(_Env) ->
-    {ok, BrokerValues} = application:get_env(emq_kafka_bridge, broker),
+    {ok, BrokerValues} = application:get_env(emqx_kafka_bridge, broker),
     KafkaHost = proplists:get_value(host, BrokerValues),
     KafkaPort = proplists:get_value(port, BrokerValues),
-    KafkaPartitionStrategy= proplists:get_value(partitionstrategy, BrokerValues),
-    KafkaPartitionWorkers= proplists:get_value(partitionworkers, BrokerValues),
+    KafkaPartitionStrategy = proplists:get_value(partitionstrategy, BrokerValues),
+    KafkaPartitionWorkers = proplists:get_value(partitionworkers, BrokerValues),
     %KafkaPayloadTopic = proplists:get_value(payloadtopic, BrokerValues),
     %KafkaEventTopic = proplists:get_value(eventtopic, BrokerValues),
     KafkaPublishTopic = proplists:get_value(publishtopic, BrokerValues),
@@ -159,13 +151,10 @@ ekaf_init(_Env) ->
     KafkaSubscribeTopic = proplists:get_value(subscribetopic, BrokerValues),
     KafkaUnsubscribeTopic = proplists:get_value(unsubscribetopic, BrokerValues),
     KafkaDeliveredTopic = proplists:get_value(deliveredtopic, BrokerValues),
-    application:set_env(ekaf, ekaf_bootstrap_broker,  {KafkaHost, list_to_integer(KafkaPort)}),
-    % application:set_env(ekaf, ekaf_bootstrap_topics,  [<<"Processing">>, <<"DeviceLog">>]),
-    application:set_env(ekaf, ekaf_partition_strategy, KafkaPartitionStrategy),
+    application:set_env(ekaf, ekaf_bootstrap_broker, {KafkaHost, list_to_integer(KafkaPort)}),
+    application:set_env(ekaf, ekaf_partition_strategy, list_to_atom(KafkaPartitionStrategy)),
     application:set_env(ekaf, ekaf_per_partition_workers, KafkaPartitionWorkers),
     application:set_env(ekaf, ekaf_per_partition_workers_max, 10),
-    % application:set_env(ekaf, ekaf_buffer_ttl, 10),
-    % application:set_env(ekaf, ekaf_max_downtime_buffer_size, 5),
     ets:new(topic_table, [named_table, protected, set, {keypos, 1}]),
     % ets:insert(topic_table, {kafka_payload_topic, KafkaPayloadTopic}),
     % ets:insert(topic_table, {kafka_event_topic, KafkaEventTopic}),
@@ -175,14 +164,11 @@ ekaf_init(_Env) ->
     ets:insert(topic_table, {kafka_subscribe_topic, KafkaSubscribeTopic}),
     ets:insert(topic_table, {kafka_unsubscribe_topic, KafkaUnsubscribeTopic}),
     ets:insert(topic_table, {kafka_delivered_topic, KafkaDeliveredTopic}),
-    {ok, _} = application:ensure_all_started(gproc),
-    {ok, _} = application:ensure_all_started(ekaf).
 
-% format_event(Action, Client) ->
-%     Event = [{action, Action},
-%                 {clientid, Client#mqtt_client.client_id},
-%                 {username, Client#mqtt_client.username}],
-%     {ok, Event}.
+    % {ok, _} = application:ensure_all_started(kafkamocker),
+    {ok, _} = application:ensure_all_started(gproc),
+    % {ok, _} = application:ensure_all_started(ranch),
+    {ok, _} = application:ensure_all_started(ekaf).
 
 format_payload(Message) ->
     {ClientId, Username} = format_from(Message#mqtt_message.from),
@@ -205,17 +191,17 @@ a2b(A) -> erlang:atom_to_binary(A, utf8).
 
 %% Called when the plugin application stop
 unload() ->
-    emqttd:unhook('client.connected', fun ?MODULE:on_client_connected/3),
-    emqttd:unhook('client.disconnected', fun ?MODULE:on_client_disconnected/3),
-    emqttd:unhook('client.subscribe', fun ?MODULE:on_client_subscribe/4),
-    emqttd:unhook('client.unsubscribe', fun ?MODULE:on_client_unsubscribe/4),
-    % emqttd:unhook('session.created', fun ?MODULE:on_session_created/3),
-    % emqttd:unhook('session.subscribed', fun ?MODULE:on_session_subscribed/4),
-    % emqttd:unhook('session.unsubscribed', fun ?MODULE:on_session_unsubscribed/4),
-    % emqttd:unhook('session.terminated', fun ?MODULE:on_session_terminated/4),
-    emqttd:unhook('message.publish', fun ?MODULE:on_message_publish/2),
-    emqttd:unhook('message.delivered', fun ?MODULE:on_message_delivered/4).
-    %emqttd:unhook('message.acked', fun ?MODULE:on_message_acked/4).
+    emqx:unhook('client.connected', fun ?MODULE:on_client_connected/4),
+    emqx:unhook('client.disconnected', fun ?MODULE:on_client_disconnected/3),
+    emqx:unhook('client.subscribe', fun ?MODULE:on_client_subscribe/4),
+    emqx:unhook('client.unsubscribe', fun ?MODULE:on_client_unsubscribe/4),
+    % emqx:unhook('session.created', fun ?MODULE:on_session_created/3),
+    % emqx:unhook('session.subscribed', fun ?MODULE:on_session_subscribed/4),
+    % emqx:unhook('session.unsubscribed', fun ?MODULE:on_session_unsubscribed/4),
+    % emqx:unhook('session.terminated', fun ?MODULE:on_session_terminated/4),
+    emqx:unhook('message.publish', fun ?MODULE:on_message_publish/2),
+    emqx:unhook('message.delivered', fun ?MODULE:on_message_delivered/4).
+    %emqx:unhook('message.acked', fun ?MODULE:on_message_acked/4).
 
 
 % produce_kafka_payload(Message) ->

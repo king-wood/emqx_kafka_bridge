@@ -1,80 +1,92 @@
-# EMQ emq\_kafka\_bridge编译流程
 
-* **OS system version: centos-7.2**
-* **erlang version: otp\_src\_20**
-* **emq version: emqx-rel-2.3.11**
-* **emq\_kafka\_bridge plugin source code gitlab:** 
-https://git.ucloudadmin.com/uiot/emq\_kafka\_bridge.git
+# emqx_kafka_bridge
 
-### 一、创建编译环境
+This is a plugin for the EMQX broker that sends all messages received by the broker to kafka.
 
-#### 安装系统必要依赖:
-  
-    sudo yum install -y gcc gcc-c++ glibc-devel make ncurses-devel openssl-devel autoconf java-1.8.0-openjdk-devel git
-  
-#### 源码编译安装erlang环境:
-  
-    wget http://erlang.org/download/otp_src_20.0.tar.gz
-    tar xvf otp_src_20.tar.gz
-    cd otp_src_20.0/
-    ./configure  --prefix=/root/erlang
-    make && make install
-  
-#### 添加对应的环境变量:
+## Build the EMQX broker
 
-    vim /etc/profile
-      export PATH=/root/erlang/bin:$PATH 
-    source /etc/profile
+1. Clone emqx-relx project
 
-### 二、获取emq\_kafka\_bridge 插件,修改源码
+   We need to clone the EMQX project [GITHUB](https://github.com/emqx/emqx-rel)
 
-    git clone https://git.ucloudadmin.com/uiot/emq_kafka_bridge.git
+```shell
+  git clone https://github.com/emqx/emqx-rel.git
+```
 
-本地修改源码后，打tag，推送。
-  
-### 三、编译安装emq
-  
-#### 下载emq-2.3.11
+2. Add EMQ Kafka bridge as a DEPS
+   Adding EMQ kafka bridge as a dependency in the Makefile.
 
-    wget https://git.ucloudadmin.com/uiot/emqx_rel_2.3.11/-/archive/master/emqx_rel_2.3.11-master.tar.gz
-    tar xzvf emqx-rel-2.3.11.tar.gz
-    cd emqx-rel-2.3.11
+   1. search for `DEPS += $(foreach dep,$(OUR_APPS),$(call app_name,$(dep)))` 
+      add the following line before the above lines
+      > DEPS += emqx_kafka_bridge
 
-#### 修改配置文件
-  
-修改Makefile文件，注意替换tag版本号:
+   2. search for
+     ```
+     $(foreach dep,$(OUR_APPS),$(eval dep_$(call app_name,$(dep)) = git-emqx https://github.com/emqx/$(dep) $(call app_vsn,$(dep))))
+     ```
+     add the following line before the above lines
+     >dep_emqx_kafka_bridge = git https://github.com/bob403/emqx_kafka_bridge.git master
 
-    DEPS += emq_kafka_bridge
-    dep_emq_kafka_bridge  = git https://git.ucloudadmin.com/uiot/emq_kafka_bridge.git {git_tag_version}
-  
-修改relx.config文件,添加如下行:
+3. Add load plugin in relx.config
+   >{emqx_kafka_bridge, load},
 
-    {emq_kafka_bridge, load},
+4. Build
+   ```shell
+   cd emqx-relx && make
+   ```
 
-#### 编译
+Configuration
+----------------------
+You will have to edit the configurations of the bridge to set the kafka Ip address and port.
 
-    make clean 
-    sudo rm -r /root/emqx-rel-2.3.11/deps/emq_kafka_bridge
-    make  
-  
-**编译结果在\_rel文件中**
+Edit the file emq-relx/deps/emqx_kafka_bridge/etc/emqx_kafka_bridge.conf
 
-### 四、启动关闭服务
+```conf
+##--------------------------------------------------------------------
+## kafka Bridge
+##--------------------------------------------------------------------
 
-配置kafka插件:
+## The Kafka loadbalancer node host that bridge is listening on.
+##
+## Value: 127.0.0.1, localhost
+kafka.host = 127.0.0.1
 
-在这里可以修改对应的kafka Topic名，负载方式，work数量。
+## The kafka loadbalancer node port that bridge is listening on.
+##
+## Value: Port
+kafka.port = 9092
 
-    vim /root/emqx-rel-2.3.11/_rel/emqttd/etc/plugins/emq_kafka_bridge.conf
+## The kafka loadbalancer node partition strategy.
+##
+## Value: strict_round_robin
+kafka.partitionstrategy = strict_round_robin
 
-    配置kafka.host
+## payload topic.
+##
+## Value: string
+kafka.payloadtopic = Processing
 
-启动emq以及载入插件:
 
-    /root/emqx-rel-2.3.11/_rel/emqttd/bin/emqttd start 
-    /root/emqx-rel-2.3.11/_rel/emqttd/bin/emqttd_ctl plugins load emq_kafka_bridge
+```
 
-卸载插件以及关闭emq:
-  
-    /root/emqx-rel-2.3.11/_rel/emqttd/bin/emqttd_ctl plugins unload emq_kafka_bridge
-    /root/emqx-rel-2.3.11/_rel/emqttd/bin/emqttd sto
+Start the EMQ broker and load the plugin 
+-----------------
+1) cd emqx-relx/_rel/emqx
+2) ./bin/emqx start
+3) ./bin/emqx_ctl plugins load emqx_kafka_bridge
+
+Test
+-----------------
+Send a MQTT message on a random topic from a MQTT client to your EMQ broker.
+
+The following should be received by your kafka consumer :
+
+  {"topic":"yourtopic", "message":[yourmessage]}
+This is the format in which kafka will receive the MQTT messages
+
+If Kafka consumer shows no messages even after publishing to EMQX - ACL makes the plugin fail, so please remove all the ACL related code to ensure it runs properly. We will soon push the updated (Working) code to the repository. 
+
+## License
+
+This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details
+
