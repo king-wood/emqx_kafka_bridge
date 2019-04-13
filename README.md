@@ -18,14 +18,14 @@ This is a plugin for the EMQX broker that sends all messages received by the bro
 
    1. search for `DEPS += $(foreach dep,$(OUR_APPS),$(call app_name,$(dep)))` 
       add the following line before the above lines
-      > DEPS += emqx_kafka_bridge
+      > DEPS += emqx-kafka-bridge
 
    2. search for
      ```
      $(foreach dep,$(OUR_APPS),$(eval dep_$(call app_name,$(dep)) = git-emqx https://github.com/emqx/$(dep) $(call app_vsn,$(dep))))
      ```
      add the following line before the above lines
-     >dep_emqx_kafka_bridge = git https://github.com/bob403/emqx_kafka_bridge.git master
+     >dep_emqx_kafka_bridge = git https://github.com/king-wood/emqx_kafka_bridge.git master
 
 3. Add load plugin in relx.config
    >{emqx_kafka_bridge, load},
@@ -74,17 +74,6 @@ Start the EMQ broker and load the plugin
 1) cd emqx-relx/_rel/emqx
 2) ./bin/emqx start
 3) ./bin/emqx_ctl plugins load emqx_kafka_bridge
-
-Test
------------------
-Send a MQTT message on a random topic from a MQTT client to your EMQ broker.
-
-The following should be received by your kafka consumer :
-
-  {"topic":"yourtopic", "message":[yourmessage]}
-This is the format in which kafka will receive the MQTT messages
-
-If Kafka consumer shows no messages even after publishing to EMQX - ACL makes the plugin fail, so please remove all the ACL related code to ensure it runs properly. We will soon push the updated (Working) code to the repository. 
 
 ## License
 
