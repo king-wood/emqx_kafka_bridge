@@ -55,7 +55,7 @@ on_client_connected(#{client_id := ClientId, username := Username}, _ConnAck, _C
                 {username, Username},
                 {ts, timestamp()}],
     produce_kafka_connected(Event),
-    {ok, Client}.
+    ok.
 
 on_client_disconnected(#{client_id := ClientId, username := Username}, _Reason, _Env) ->
     % io:format("client ~s/~s will connected: ~w~n", [ClientId, Username, Reason]),
