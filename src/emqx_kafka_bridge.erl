@@ -37,7 +37,7 @@
 %% Called when the plugin application start
 load(Env) ->
     ekaf_init([Env]),
-    emqx:hook('client.connected', fun ?MODULE:on_client_connected/4, [Env]),
+    emqx:hook('client.connected', fun ?MODULE:on_client_connected/3, [Env]),
     emqx:hook('client.disconnected', fun ?MODULE:on_client_disconnected/3, [Env]),
     emqx:hook('client.subscribe', fun ?MODULE:on_client_subscribe/4, [Env]),
     emqx:hook('client.unsubscribe', fun ?MODULE:on_client_unsubscribe/4, [Env]),
@@ -190,7 +190,7 @@ a2b(A) -> erlang:atom_to_binary(A, utf8).
 
 %% Called when the plugin application stop
 unload() ->
-    emqx:unhook('client.connected', fun ?MODULE:on_client_connected/4),
+    emqx:unhook('client.connected', fun ?MODULE:on_client_connected/3),
     emqx:unhook('client.disconnected', fun ?MODULE:on_client_disconnected/3),
     emqx:unhook('client.subscribe', fun ?MODULE:on_client_subscribe/4),
     emqx:unhook('client.unsubscribe', fun ?MODULE:on_client_unsubscribe/4),
