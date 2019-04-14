@@ -120,7 +120,7 @@ on_message_delivered(ClientId, Username, Message, _Env) ->
                 {username, Username},
                 {topic, Message#message.topic},
                 {size, byte_size(Message#message.payload)},
-                {ts, emqttd_time:now_secs(Message#message.timestamp)}],
+                {ts, emqx_time:now_secs(Message#message.timestamp)}],
     produce_kafka_delivered(Event),
     {ok, Message}.
 
@@ -175,7 +175,7 @@ format_payload(Message) ->
                   {topic, Message#message.topic},
                   {payload, Message#message.payload},
                   {size, byte_size(Message#message.payload)},
-                  {ts, emqttd_time:now_secs(Message#message.timestamp)}],
+                  {ts, emqx_time:now_secs(Message#message.timestamp)}],
     {ok, Payload}.
 
 format_from({ClientId, Username}) ->
