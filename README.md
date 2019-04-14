@@ -58,14 +58,54 @@ kafka.port = 9092
 
 ## The kafka loadbalancer node partition strategy.
 ##
-## Value: strict_round_robin
-kafka.partitionstrategy = strict_round_robin
+## Value: random, sticky_round_robin, strict_round_robin, custom
+kafka.partitionstrategy = random
+
+## Each worker represents a connection to a broker + topic + partition combination.
+## You can decide how many workers to start for each partition.
+##
+## Value: 
+kafka.partitionworkers = 2
 
 ## payload topic.
 ##
 ## Value: string
 kafka.payloadtopic = Processing
 
+## event topic.
+##
+## Value: string
+kafka.eventtopic = Event
+
+## publish topic.
+##
+## Value: string
+kafka.publishtopic = Publish
+
+## connected topic.
+##
+## Value: string
+kafka.connectedtopic = Connected
+
+## disconnected topic.
+##
+## Value: string
+kafka.disconnectedtopic = Disconnected
+
+## subscribe topic.
+##
+## Value: string
+kafka.subscribetopic = Subscribe
+
+## unsubscribe topic.
+##
+## Value: string
+kafka.unsubscribetopic = Unsubscribe
+
+## delivered topic.
+##
+## Value: string
+kafka.deliveredtopic = Delivered
 
 ```
 
