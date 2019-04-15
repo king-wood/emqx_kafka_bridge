@@ -116,10 +116,8 @@ on_message_publish(Message, _Env) ->
 
 on_message_delivered(#{client_id := ClientId, username := Username}, Message, _Env) ->
     % io:format("delivered to client(~s/~s): ~s~n", [Username, ClientId, emqttd_message:format(Message)]),
-    Message = Message#message{payload="delivered"},
     Event = [{clientid, ClientId},
                 {username, Username},
-                {id, Message#message.id},
                 {topic, Message#message.topic},
                 {size, byte_size(Message#message.payload)},
                 {ts, emqx_time:now_secs(Message#message.timestamp)}],
