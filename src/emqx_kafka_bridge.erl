@@ -28,11 +28,11 @@
 
 -export([on_client_connected/4, on_client_disconnected/3]).
 
--export([on_client_subscribe/4, on_client_unsubscribe/4]).
+-export([on_client_subscribe/3, on_client_unsubscribe/3]).
 
 % -export([on_session_created/3, on_session_subscribed/4, on_session_unsubscribed/4, on_session_terminated/4]).
 
--export([on_message_publish/2, on_message_delivered/4]).
+-export([on_message_publish/2, on_message_delivered/3]).
 
 %% Called when the plugin application start
 load(Env) ->
@@ -47,7 +47,7 @@ load(Env) ->
     % emqx:hook('session.terminated', fun ?MODULE:on_session_terminated/4, [Env]),
     % emqx:hook('message.acked', fun ?MODULE:on_message_acked/3, [Env]),
     emqx:hook('message.publish', fun ?MODULE:on_message_publish/2, [Env]),
-    emqx:hook('message.delivered', fun ?MODULE:on_message_delivered/4, [Env]).
+    emqx:hook('message.delivered', fun ?MODULE:on_message_delivered/3, [Env]).
 
 on_client_connected(#{client_id := ClientId, username := Username}, _ConnAck, _ConnAttrs, _Env) ->
     % io:format("client ~s/~s will connected: ~w.~n", [ClientId, Username, ConnAck]),
@@ -65,7 +65,7 @@ on_client_disconnected(#{client_id := ClientId, username := Username}, _Reason, 
     produce_kafka_disconnected(Event),
     ok.
 
-on_client_subscribe(ClientId, Username, TopicTable, _Env) ->
+on_client_subscribe(#{client_id := ClientId, username := Username}, TopicTable, _Env) ->
     % io:format("client(~s/~s) will subscribe: ~p~n", [Username, ClientId, TopicTable]),
     Event = [{clientid, ClientId},
                 {username, Username},
@@ -74,7 +74,7 @@ on_client_subscribe(ClientId, Username, TopicTable, _Env) ->
     produce_kafka_subscribe(Event),
     {ok, TopicTable}.
     
-on_client_unsubscribe(ClientId, Username, TopicTable, _Env) ->
+on_client_unsubscribe(#{client_id := ClientId, username := Username}, TopicTable, _Env) ->
     % io:format("client(~s/~s) unsubscribe ~p~n", [ClientId, Username, TopicTable]),
     Event = [{clientid, ClientId},
                 {username, Username},
@@ -114,7 +114,7 @@ on_message_publish(Message, _Env) ->
     produce_kafka_publish(Payload),
     {ok, Message}.
 
-on_message_delivered(ClientId, Username, Message, _Env) ->
+on_message_delivered(#{client_id := ClientId, username := Username}, Message, _Env) ->
     % io:format("delivered to client(~s/~s): ~s~n", [Username, ClientId, emqttd_message:format(Message)]),
     Event = [{clientid, ClientId},
                 {username, Username},
@@ -191,14 +191,14 @@ a2b(A) -> erlang:atom_to_binary(A, utf8).
 unload() ->
     emqx:unhook('client.connected', fun ?MODULE:on_client_connected/4),
     emqx:unhook('client.disconnected', fun ?MODULE:on_client_disconnected/3),
-    emqx:unhook('client.subscribe', fun ?MODULE:on_client_subscribe/4),
-    emqx:unhook('client.unsubscribe', fun ?MODULE:on_client_unsubscribe/4),
+    emqx:unhook('client.subscribe', fun ?MODULE:on_client_subscribe/3),
+    emqx:unhook('client.unsubscribe', fun ?MODULE:on_client_unsubscribe/3),
     % emqx:unhook('session.created', fun ?MODULE:on_session_created/3),
     % emqx:unhook('session.subscribed', fun ?MODULE:on_session_subscribed/4),
     % emqx:unhook('session.unsubscribed', fun ?MODULE:on_session_unsubscribed/4),
     % emqx:unhook('session.terminated', fun ?MODULE:on_session_terminated/4),
     emqx:unhook('message.publish', fun ?MODULE:on_message_publish/2),
-    emqx:unhook('message.delivered', fun ?MODULE:on_message_delivered/4).
+    emqx:unhook('message.delivered', fun ?MODULE:on_message_delivered/3).
     %emqx:unhook('message.acked', fun ?MODULE:on_message_acked/4).
 
 
