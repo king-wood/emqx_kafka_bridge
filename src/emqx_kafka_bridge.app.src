@@ -1,0 +1,7 @@
+{application,emqx_kafka_bridge,
+             [{description,"EMQX kafka bridge"},
+              {vsn,"git"},
+              {modules,[]},
+              {registered,[emqx_kafka_bridge_sup]},
+              {applications,[kernel,stdlib,gproc,kafkamocker,ekaf,ranch]},
+              {mod,{emqx_kafka_bridge_app,[]}}]}. 
