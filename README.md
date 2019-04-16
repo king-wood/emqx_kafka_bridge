@@ -25,7 +25,7 @@ This is a plugin for the EMQX broker that sends all messages received by the bro
      $(foreach dep,$(MAIN_APPS),$(eval dep_$(call app_name,$(dep)) = $(CLONE_METHOD) https://github.com/emqx/$(dep) $(call app_vsn,$(dep))))
      ```
 
-     add the following line before the above lines
+     add the following line below the above lines
      >dep_emqx_kafka_bridge = git <https://github.com/king-wood/emqx_kafka_bridge.git> master
 
 3. Add load plugin in relx.config
