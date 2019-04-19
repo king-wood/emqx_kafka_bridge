@@ -85,20 +85,20 @@ on_client_unsubscribe(#{client_id := ClientId, username := Username}, TopicTable
     produce_kafka_unsubscribe(Event),
     {ok, TopicTable}.
 
-on_session_created(#{client_id := _ClientId}, SessAttrs, _Env) ->
-    [_, _, _, UserNameAttr | _] = SessAttrs,
-    {_, UserName} = UserNameAttr,
-    io:format("Session(~s) created:~n", [UserName]).
+on_session_created(#{client_id := ClientId}, SessAttrs, _Env) ->
+    [_, _, _, {_, UserName} | _] = SessAttrs,
+    io:format("session(~s/~s) created~n", [ClientId, Username]),
+    Event = [{clientid, ClientId},
+                {username, Username},
+                {ts, timestamp()}],
+    produce_kafka_session_created(Event).
 
 on_session_terminated(#{client_id := ClientId, username := Username}, _ReasonCode, _Env) ->
     io:format("Session(~s/~s) terminated: .", [ClientId, Username]).
-
-% on_session_created(#{client_id := ClientId, username := Username}, _SessAttrs, _Env) ->
-%     io:format("session(~s/~s) created~n", [ClientId, Username]),
-%     Event = [{clientid, ClientId},
-%                 {username, Username},
-%                 {ts, timestamp()}],
-%     produce_kafka_session_created(Event).
+    Event = [{clientid, ClientId},
+                {username, Username},
+                {ts, timestamp()}],
+    produce_kafka_session_terminated(Event).
 
 % on_session_subscribed(ClientId, Username, {Topic, Opts}, _Env) ->
 %     % io:format("session(~s/~s) subscribed: ~p~n", [Username, ClientId, {Topic, Opts}]),
@@ -107,13 +107,6 @@ on_session_terminated(#{client_id := ClientId, username := Username}, _ReasonCod
 % on_session_unsubscribed(ClientId, Username, {Topic, Opts}, _Env) ->
 %     % io:format("session(~s/~s) unsubscribed: ~p~n", [Username, ClientId, {Topic, Opts}]),
 %     ok.
-
-% on_session_terminated(#{client_id := ClientId, username := Username}, _ReasonCode, _Env) ->
-%     io:format("session(~s/~s) terminated~n", [ClientId, Username]),
-%     Event = [{clientid, ClientId},
-%                 {username, Username},
-%                 {ts, timestamp()}],
-%     produce_kafka_session_terminated(Event).
 
 %% transform message and return
 on_message_publish(Message = #message{topic = <<"$SYS/", _/binary>>}, _Env) ->
