@@ -85,12 +85,18 @@ on_client_unsubscribe(#{client_id := ClientId, username := Username}, TopicTable
     produce_kafka_unsubscribe(Event),
     {ok, TopicTable}.
 
-on_session_created(#{client_id := ClientId, username := Username}, _SessAttrs, _Env) ->
-    io:format("session(~s/~s) created~n", [ClientId, Username]),
-    Event = [{clientid, ClientId},
-                {username, Username},
-                {ts, timestamp()}],
-    produce_kafka_session_created(Event).
+on_session_created(#{client_id := ClientId}, SessAttrs, _Env) ->
+    io:format("Session(~s) created: ~p~n", [ClientId, SessAttrs]).
+
+on_session_terminated(#{client_id := ClientId}, ReasonCode, _Env) ->
+    io:format("Session(~s) terminated: ~p.", [ClientId, ReasonCode]).
+
+% on_session_created(#{client_id := ClientId, username := Username}, _SessAttrs, _Env) ->
+%     io:format("session(~s/~s) created~n", [ClientId, Username]),
+%     Event = [{clientid, ClientId},
+%                 {username, Username},
+%                 {ts, timestamp()}],
+%     produce_kafka_session_created(Event).
 
 % on_session_subscribed(ClientId, Username, {Topic, Opts}, _Env) ->
 %     % io:format("session(~s/~s) subscribed: ~p~n", [Username, ClientId, {Topic, Opts}]),
@@ -100,12 +106,12 @@ on_session_created(#{client_id := ClientId, username := Username}, _SessAttrs, _
 %     % io:format("session(~s/~s) unsubscribed: ~p~n", [Username, ClientId, {Topic, Opts}]),
 %     ok.
 
-on_session_terminated(#{client_id := ClientId, username := Username}, _ReasonCode, _Env) ->
-    io:format("session(~s/~s) terminated~n", [ClientId, Username]),
-    Event = [{clientid, ClientId},
-                {username, Username},
-                {ts, timestamp()}],
-    produce_kafka_session_terminated(Event).
+% on_session_terminated(#{client_id := ClientId, username := Username}, _ReasonCode, _Env) ->
+%     io:format("session(~s/~s) terminated~n", [ClientId, Username]),
+%     Event = [{clientid, ClientId},
+%                 {username, Username},
+%                 {ts, timestamp()}],
+%     produce_kafka_session_terminated(Event).
 
 %% transform message and return
 on_message_publish(Message = #message{topic = <<"$SYS/", _/binary>>}, _Env) ->
@@ -283,23 +289,23 @@ produce_kafka_delivered(Message) ->
     ok = ekaf:produce_async(list_to_binary(Topic), Payload),
     ok.
 
-produce_kafka_session_created(Message) ->
-    [{_, Topic}] = ets:lookup(topic_table, kafka_session_created_topic),
-    io:format("send to kafka event topic: byte size: ~p~n", [list_to_binary(Topic)]),
-    % Payload = iolist_to_binary(mochijson2:encode(Message)),
-    Payload = jsx:encode(Message),
-    % ok = ekaf:produce_async(Topic, Payload),
-    ok = ekaf:produce_async(list_to_binary(Topic), Payload),
-    ok.
+% produce_kafka_session_created(Message) ->
+%     [{_, Topic}] = ets:lookup(topic_table, kafka_session_created_topic),
+%     io:format("send to kafka event topic: byte size: ~p~n", [list_to_binary(Topic)]),
+%     % Payload = iolist_to_binary(mochijson2:encode(Message)),
+%     Payload = jsx:encode(Message),
+%     % ok = ekaf:produce_async(Topic, Payload),
+%     ok = ekaf:produce_async(list_to_binary(Topic), Payload),
+%     ok.
 
-produce_kafka_session_terminated(Message) ->
-    [{_, Topic}] = ets:lookup(topic_table, kafka_session_terminated_topic),
-    io:format("send to kafka event topic: byte size: ~p~n", [list_to_binary(Topic)]),
-    % Payload = iolist_to_binary(mochijson2:encode(Message)),
-    Payload = jsx:encode(Message),
-    % ok = ekaf:produce_async(Topic, Payload),
-    ok = ekaf:produce_async(list_to_binary(Topic), Payload),
-    ok.
+% produce_kafka_session_terminated(Message) ->
+%     [{_, Topic}] = ets:lookup(topic_table, kafka_session_terminated_topic),
+%     io:format("send to kafka event topic: byte size: ~p~n", [list_to_binary(Topic)]),
+%     % Payload = iolist_to_binary(mochijson2:encode(Message)),
+%     Payload = jsx:encode(Message),
+%     % ok = ekaf:produce_async(Topic, Payload),
+%     ok = ekaf:produce_async(list_to_binary(Topic), Payload),
+%     ok.
 
 timestamp() ->
     {M, S, _} = os:timestamp(),
