@@ -30,7 +30,9 @@
 
 -export([on_client_subscribe/3, on_client_unsubscribe/3]).
 
-% -export([on_session_created/3, on_session_subscribed/4, on_session_unsubscribed/4, on_session_terminated/4]).
+-export([on_session_created/3, on_session_terminated/3]).
+
+% -export([on_session_subscribed/4, on_session_unsubscribed/4]).
 
 -export([on_message_publish/2, on_message_delivered/3]).
 
@@ -41,10 +43,10 @@ load(Env) ->
     emqx:hook('client.disconnected', fun ?MODULE:on_client_disconnected/3, [Env]),
     emqx:hook('client.subscribe', fun ?MODULE:on_client_subscribe/3, [Env]),
     emqx:hook('client.unsubscribe', fun ?MODULE:on_client_unsubscribe/3, [Env]),
-    % emqx:hook('session.created', fun ?MODULE:on_session_created/3, [Env]),
     % emqx:hook('session.subscribed', fun ?MODULE:on_session_subscribed/4, [Env]),
     % emqx:hook('session.unsubscribed', fun ?MODULE:on_session_unsubscribed/4, [Env]),
-    % emqx:hook('session.terminated', fun ?MODULE:on_session_terminated/4, [Env]),
+    emqx:hook('session.created', fun ?MODULE:on_session_created/3, [Env]),
+    emqx:hook('session.terminated', fun ?MODULE:on_session_terminated/3, [Env]),
     % emqx:hook('message.acked', fun ?MODULE:on_message_acked/3, [Env]),
     emqx:hook('message.publish', fun ?MODULE:on_message_publish/2, [Env]),
     emqx:hook('message.delivered', fun ?MODULE:on_message_delivered/3, [Env]).
@@ -83,12 +85,12 @@ on_client_unsubscribe(#{client_id := ClientId, username := Username}, TopicTable
     produce_kafka_unsubscribe(Event),
     {ok, TopicTable}.
 
-% on_session_created(ClientId, Username, _Env) ->
-%     % io:format("session(~s/~s) created~n", [ClientId, Username]),
-%     Event = [{action, connected},
-%                 {clientid, ClientId},
-%                 {username, Username}],
-%     produce_kafka_log(Event).
+on_session_created(#{client_id := ClientId, username := Username}, _SessAttrs, _Env) ->
+    % io:format("session(~s/~s) created~n", [ClientId, Username]),
+    Event = [{clientid, ClientId},
+                {username, Username},
+                {ts, timestamp()}],
+    produce_kafka_session_created(Event).
 
 % on_session_subscribed(ClientId, Username, {Topic, Opts}, _Env) ->
 %     % io:format("session(~s/~s) subscribed: ~p~n", [Username, ClientId, {Topic, Opts}]),
@@ -98,12 +100,12 @@ on_client_unsubscribe(#{client_id := ClientId, username := Username}, TopicTable
 %     % io:format("session(~s/~s) unsubscribed: ~p~n", [Username, ClientId, {Topic, Opts}]),
 %     ok.
 
-% on_session_terminated(ClientId, Username, Reason, _Env) ->
-%     % io:format("session(~s/~s/~s) terminated~n", [ClientId, Username, Reason]),
-%     Event = [{action, disconnected},
-%                 {clientid, ClientId},
-%                 {username, Username}],
-%     produce_kafka_log(Event).
+on_session_terminated(#{client_id := ClientId, username := Username}, _ReasonCode, _Env) ->
+    % io:format("session(~s/~s/~s) terminated~n", [ClientId, Username, Reason]),
+    Event = [{clientid, ClientId},
+                {username, Username},
+                {ts, timestamp()}],
+    produce_kafka_session_terminated(Event).
 
 %% transform message and return
 on_message_publish(Message = #message{topic = <<"$SYS/", _/binary>>}, _Env) ->
@@ -149,6 +151,8 @@ ekaf_init(_Env) ->
     KafkaSubscribeTopic = proplists:get_value(subscribetopic, BrokerValues),
     KafkaUnsubscribeTopic = proplists:get_value(unsubscribetopic, BrokerValues),
     KafkaDeliveredTopic = proplists:get_value(deliveredtopic, BrokerValues),
+    KafkaSessionCreatedTopic = proplists:get_value(sessioncreatedtopic, BrokerValues),
+    KafkaSessionTerminatedTopic = proplists:get_value(sessionterminatedtopic, BrokerValues),
     application:set_env(ekaf, ekaf_bootstrap_broker, {KafkaHost, list_to_integer(KafkaPort)}),
     application:set_env(ekaf, ekaf_partition_strategy, list_to_atom(KafkaPartitionStrategy)),
     application:set_env(ekaf, ekaf_per_partition_workers, KafkaPartitionWorkers),
@@ -162,6 +166,9 @@ ekaf_init(_Env) ->
     ets:insert(topic_table, {kafka_subscribe_topic, KafkaSubscribeTopic}),
     ets:insert(topic_table, {kafka_unsubscribe_topic, KafkaUnsubscribeTopic}),
     ets:insert(topic_table, {kafka_delivered_topic, KafkaDeliveredTopic}),
+
+    ets:insert(topic_table, {kafka_session_created_topic, KafkaSessionCreatedTopic}),
+    ets:insert(topic_table, {kafka_session_terminated_topic, KafkaSessionTerminatedTopic}),
 
     % {ok, _} = application:ensure_all_started(kafkamocker),
     {ok, _} = application:ensure_all_started(gproc),
@@ -193,10 +200,10 @@ unload() ->
     emqx:unhook('client.disconnected', fun ?MODULE:on_client_disconnected/3),
     emqx:unhook('client.subscribe', fun ?MODULE:on_client_subscribe/3),
     emqx:unhook('client.unsubscribe', fun ?MODULE:on_client_unsubscribe/3),
-    % emqx:unhook('session.created', fun ?MODULE:on_session_created/3),
     % emqx:unhook('session.subscribed', fun ?MODULE:on_session_subscribed/4),
     % emqx:unhook('session.unsubscribed', fun ?MODULE:on_session_unsubscribed/4),
-    % emqx:unhook('session.terminated', fun ?MODULE:on_session_terminated/4),
+    emqx:unhook('session.created', fun ?MODULE:on_session_created/3),
+    emqx:unhook('session.terminated', fun ?MODULE:on_session_terminated/3),
     emqx:unhook('message.publish', fun ?MODULE:on_message_publish/2),
     emqx:unhook('message.delivered', fun ?MODULE:on_message_delivered/3).
     %emqx:unhook('message.acked', fun ?MODULE:on_message_acked/4).
@@ -205,7 +212,7 @@ unload() ->
 % produce_kafka_payload(Message) ->
 %     [{_, Topic}] = ets:lookup(topic_table, kafka_payload_topic),
 %     % Topic = <<"Processing">>,
-%     % io:format("send to kafka event topic: byte size: ~p~n", [byte_size(list_to_binary(Topic))]),    
+%     % io:format("send to kafka event topic: byte size: ~p~n", [byte_size(list_to_binary(Topic))]),
 %     % Payload = iolist_to_binary(mochijson2:encode(Message)),
 %     Payload = jsx:encode(Message),
 %     % ok = ekaf:produce_async(Topic, Payload),
@@ -215,7 +222,7 @@ unload() ->
 % produce_kafka_log(Message) ->
 %     [{_, Topic}] = ets:lookup(topic_table, kafka_event_topic),
 %     % Topic = <<"DeviceLog">>,
-%     % io:format("send to kafka event topic: byte size: ~p~n", [byte_size(list_to_binary(Topic))]),    
+%     % io:format("send to kafka event topic: byte size: ~p~n", [byte_size(list_to_binary(Topic))]),
 %     % Payload = iolist_to_binary(mochijson2:encode(Message)),
 %     Payload = jsx:encode(Message),
 %     % ok = ekaf:produce_async(Topic, Payload),
@@ -224,8 +231,7 @@ unload() ->
 
 produce_kafka_publish(Message) ->
     [{_, Topic}] = ets:lookup(topic_table, kafka_publish_topic),
-    % Topic = <<"Processing">>,
-    % io:format("send to kafka event topic: byte size: ~p~n", [byte_size(list_to_binary(Topic))]),    
+    % io:format("send to kafka event topic: byte size: ~p~n", [byte_size(list_to_binary(Topic))]),
     % Payload = iolist_to_binary(mochijson2:encode(Message)),
     Payload = jsx:encode(Message),
     % ok = ekaf:produce_async(Topic, Payload),
@@ -234,8 +240,7 @@ produce_kafka_publish(Message) ->
 
 produce_kafka_connected(Message) ->
     [{_, Topic}] = ets:lookup(topic_table, kafka_connected_topic),
-    % Topic = <<"Processing">>,
-    % io:format("send to kafka event topic: byte size: ~p~n", [byte_size(list_to_binary(Topic))]),    
+    % io:format("send to kafka event topic: byte size: ~p~n", [byte_size(list_to_binary(Topic))]),
     % Payload = iolist_to_binary(mochijson2:encode(Message)),
     Payload = jsx:encode(Message),
     % ok = ekaf:produce_async(Topic, Payload),
@@ -244,8 +249,7 @@ produce_kafka_connected(Message) ->
 
 produce_kafka_disconnected(Message) ->
     [{_, Topic}] = ets:lookup(topic_table, kafka_disconnected_topic),
-    % Topic = <<"Processing">>,
-    % io:format("send to kafka event topic: byte size: ~p~n", [byte_size(list_to_binary(Topic))]),    
+    % io:format("send to kafka event topic: byte size: ~p~n", [byte_size(list_to_binary(Topic))]),
     % Payload = iolist_to_binary(mochijson2:encode(Message)),
     Payload = jsx:encode(Message),
     % ok = ekaf:produce_async(Topic, Payload),
@@ -254,8 +258,7 @@ produce_kafka_disconnected(Message) ->
 
 produce_kafka_unsubscribe(Message) ->
     [{_, Topic}] = ets:lookup(topic_table, kafka_unsubscribe_topic),
-    % Topic = <<"Processing">>,
-    % io:format("send to kafka event topic: byte size: ~p~n", [byte_size(list_to_binary(Topic))]),    
+    % io:format("send to kafka event topic: byte size: ~p~n", [byte_size(list_to_binary(Topic))]),
     % Payload = iolist_to_binary(mochijson2:encode(Message)),
     Payload = jsx:encode(Message),
     % ok = ekaf:produce_async(Topic, Payload),
@@ -264,8 +267,7 @@ produce_kafka_unsubscribe(Message) ->
 
 produce_kafka_subscribe(Message) ->
     [{_, Topic}] = ets:lookup(topic_table, kafka_subscribe_topic),
-    % Topic = <<"Processing">>,
-    % io:format("send to kafka event topic: byte size: ~p~n", [byte_size(list_to_binary(Topic))]),    
+    % io:format("send to kafka event topic: byte size: ~p~n", [byte_size(list_to_binary(Topic))]),
     % Payload = iolist_to_binary(mochijson2:encode(Message)),
     Payload = jsx:encode(Message),
     % ok = ekaf:produce_async(Topic, Payload),
@@ -274,8 +276,25 @@ produce_kafka_subscribe(Message) ->
 
 produce_kafka_delivered(Message) ->
     [{_, Topic}] = ets:lookup(topic_table, kafka_delivered_topic),
-    % Topic = <<"Processing">>,
-    % io:format("send to kafka event topic: byte size: ~p~n", [byte_size(list_to_binary(Topic))]),    
+    % io:format("send to kafka event topic: byte size: ~p~n", [byte_size(list_to_binary(Topic))]),
+    % Payload = iolist_to_binary(mochijson2:encode(Message)),
+    Payload = jsx:encode(Message),
+    % ok = ekaf:produce_async(Topic, Payload),
+    ok = ekaf:produce_async(list_to_binary(Topic), Payload),
+    ok.
+
+produce_kafka_session_created(Message) ->
+    [{_, Topic}] = ets:lookup(topic_table, kafka_session_created_topic),
+    % io:format("send to kafka event topic: byte size: ~p~n", [byte_size(list_to_binary(Topic))]),
+    % Payload = iolist_to_binary(mochijson2:encode(Message)),
+    Payload = jsx:encode(Message),
+    % ok = ekaf:produce_async(Topic, Payload),
+    ok = ekaf:produce_async(list_to_binary(Topic), Payload),
+    ok.
+
+produce_kafka_session_terminated(Message) ->
+    [{_, Topic}] = ets:lookup(topic_table, kafka_session_terminated_topic),
+    % io:format("send to kafka event topic: byte size: ~p~n", [byte_size(list_to_binary(Topic))]),
     % Payload = iolist_to_binary(mochijson2:encode(Message)),
     Payload = jsx:encode(Message),
     % ok = ekaf:produce_async(Topic, Payload),
