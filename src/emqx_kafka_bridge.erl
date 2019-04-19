@@ -85,11 +85,11 @@ on_client_unsubscribe(#{client_id := ClientId, username := Username}, TopicTable
     produce_kafka_unsubscribe(Event),
     {ok, TopicTable}.
 
-on_session_created(Client, _SessAttrs, _Env) ->
-    io:format("Session(~s) created: ~p~n", [Client]).
+on_session_created(#{client_id := ClientId, username := Username}, _SessAttrs, _Env) ->
+    io:format("Session(~s/~s) created: ~n", [ClientId, Username]).
 
-on_session_terminated(Client, _ReasonCode, _Env) ->
-    io:format("Session(~s) terminated: ~p.", [Client]).
+on_session_terminated(#{client_id := ClientId, username := Username}, _ReasonCode, _Env) ->
+    io:format("Session(~s/~s) terminated: .", [ClientId, Username]).
 
 % on_session_created(#{client_id := ClientId, username := Username}, _SessAttrs, _Env) ->
 %     io:format("session(~s/~s) created~n", [ClientId, Username]),
