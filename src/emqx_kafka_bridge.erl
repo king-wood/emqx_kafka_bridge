@@ -86,7 +86,8 @@ on_client_unsubscribe(#{client_id := ClientId, username := Username}, TopicTable
     {ok, TopicTable}.
 
 on_session_created(#{client_id := ClientId}, SessAttrs, _Env) ->
-    [_, _, _, {_, UserName} | _] = SessAttrs,
+    [_, _, _, UserNameAttr | _] = SessAttrs,
+    {_, UserName} = UserNameAttr,
     io:format("session(~s/~s) created~n", [ClientId, Username]),
     Event = [{clientid, ClientId},
                 {username, Username},
