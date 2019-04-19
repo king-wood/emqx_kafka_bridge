@@ -86,10 +86,10 @@ on_client_unsubscribe(#{client_id := ClientId, username := Username}, TopicTable
     {ok, TopicTable}.
 
 on_session_created(#{client_id := ClientId, username := Username}, _SessAttrs, _Env) ->
-    io:format("Session(~s) created: ~p~n", [ClientId, Username]).
+    io:format("Session(~s/~s) created: ~p~n", [ClientId, Username]).
 
 on_session_terminated(#{client_id := ClientId, username := Username}, _ReasonCode, _Env) ->
-    io:format("Session(~s) terminated: ~p.", [ClientId, Username]).
+    io:format("Session(~s/~s) terminated: ~p.", [ClientId, Username]).
 
 % on_session_created(#{client_id := ClientId, username := Username}, _SessAttrs, _Env) ->
 %     io:format("session(~s/~s) created~n", [ClientId, Username]),
