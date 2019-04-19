@@ -284,23 +284,23 @@ produce_kafka_delivered(Message) ->
     ok = ekaf:produce_async(list_to_binary(Topic), Payload),
     ok.
 
-% produce_kafka_session_created(Message) ->
-%     [{_, Topic}] = ets:lookup(topic_table, kafka_session_created_topic),
-%     io:format("send to kafka event topic: byte size: ~p~n", [list_to_binary(Topic)]),
-%     % Payload = iolist_to_binary(mochijson2:encode(Message)),
-%     Payload = jsx:encode(Message),
-%     % ok = ekaf:produce_async(Topic, Payload),
-%     ok = ekaf:produce_async(list_to_binary(Topic), Payload),
-%     ok.
+produce_kafka_session_created(Message) ->
+    [{_, Topic}] = ets:lookup(topic_table, kafka_session_created_topic),
+    io:format("send to kafka event topic: byte size: ~p~n", [list_to_binary(Topic)]),
+    % Payload = iolist_to_binary(mochijson2:encode(Message)),
+    Payload = jsx:encode(Message),
+    % ok = ekaf:produce_async(Topic, Payload),
+    ok = ekaf:produce_async(list_to_binary(Topic), Payload),
+    ok.
 
-% produce_kafka_session_terminated(Message) ->
-%     [{_, Topic}] = ets:lookup(topic_table, kafka_session_terminated_topic),
-%     io:format("send to kafka event topic: byte size: ~p~n", [list_to_binary(Topic)]),
-%     % Payload = iolist_to_binary(mochijson2:encode(Message)),
-%     Payload = jsx:encode(Message),
-%     % ok = ekaf:produce_async(Topic, Payload),
-%     ok = ekaf:produce_async(list_to_binary(Topic), Payload),
-%     ok.
+produce_kafka_session_terminated(Message) ->
+    [{_, Topic}] = ets:lookup(topic_table, kafka_session_terminated_topic),
+    io:format("send to kafka event topic: byte size: ~p~n", [list_to_binary(Topic)]),
+    % Payload = iolist_to_binary(mochijson2:encode(Message)),
+    Payload = jsx:encode(Message),
+    % ok = ekaf:produce_async(Topic, Payload),
+    ok = ekaf:produce_async(list_to_binary(Topic), Payload),
+    ok.
 
 timestamp() ->
     {M, S, _} = os:timestamp(),
