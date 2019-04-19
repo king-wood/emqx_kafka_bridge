@@ -86,7 +86,7 @@ on_client_unsubscribe(#{client_id := ClientId, username := Username}, TopicTable
     {ok, TopicTable}.
 
 on_session_created(#{client_id := ClientId, username := Username}, _SessAttrs, _Env) ->
-    % io:format("session(~s/~s) created~n", [ClientId, Username]),
+    io:format("session(~s/~s) created~n", [ClientId, Username]),
     Event = [{clientid, ClientId},
                 {username, Username},
                 {ts, timestamp()}],
@@ -101,7 +101,7 @@ on_session_created(#{client_id := ClientId, username := Username}, _SessAttrs, _
 %     ok.
 
 on_session_terminated(#{client_id := ClientId, username := Username}, _ReasonCode, _Env) ->
-    % io:format("session(~s/~s/~s) terminated~n", [ClientId, Username, Reason]),
+    io:format("session(~s/~s) terminated~n", [ClientId, Username]),
     Event = [{clientid, ClientId},
                 {username, Username},
                 {ts, timestamp()}],
@@ -285,7 +285,7 @@ produce_kafka_delivered(Message) ->
 
 produce_kafka_session_created(Message) ->
     [{_, Topic}] = ets:lookup(topic_table, kafka_session_created_topic),
-    % io:format("send to kafka event topic: byte size: ~p~n", [byte_size(list_to_binary(Topic))]),
+    io:format("send to kafka event topic: byte size: ~p~n", [list_to_binary(Topic)]),
     % Payload = iolist_to_binary(mochijson2:encode(Message)),
     Payload = jsx:encode(Message),
     % ok = ekaf:produce_async(Topic, Payload),
@@ -294,7 +294,7 @@ produce_kafka_session_created(Message) ->
 
 produce_kafka_session_terminated(Message) ->
     [{_, Topic}] = ets:lookup(topic_table, kafka_session_terminated_topic),
-    % io:format("send to kafka event topic: byte size: ~p~n", [byte_size(list_to_binary(Topic))]),
+    io:format("send to kafka event topic: byte size: ~p~n", [list_to_binary(Topic)]),
     % Payload = iolist_to_binary(mochijson2:encode(Message)),
     Payload = jsx:encode(Message),
     % ok = ekaf:produce_async(Topic, Payload),
