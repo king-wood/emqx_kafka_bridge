@@ -52,7 +52,7 @@ load(Env) ->
     emqx:hook('message.delivered', fun ?MODULE:on_message_delivered/3, [Env]).
 
 on_client_connected(#{client_id := ClientId, username := Username}, _ConnAck, _ConnAttrs, _Env) ->
-    io:format("client ~s/~s will connected: ~w.~n", [ClientId, Username, ConnAck]),
+    io:format("client ~s/~s will connected ~n", [ClientId, Username]),
     Event = [{clientid, ClientId},
                 {username, Username},
                 {ts, timestamp()}],
@@ -60,7 +60,7 @@ on_client_connected(#{client_id := ClientId, username := Username}, _ConnAck, _C
     ok.
 
 on_client_disconnected(#{client_id := ClientId, username := Username}, _Reason, _Env) ->
-    io:format("client ~s/~s will connected: ~w~n", [ClientId, Username, Reason]),
+    io:format("client ~s/~s will connected ~n", [ClientId, Username]),
     Event = [{clientid, ClientId},
                 {username, Username},
                 {ts, timestamp()}],
