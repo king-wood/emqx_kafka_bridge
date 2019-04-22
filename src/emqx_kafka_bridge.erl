@@ -52,7 +52,7 @@ load(Env) ->
     emqx:hook('message.delivered', fun ?MODULE:on_message_delivered/3, [Env]).
 
 on_client_connected(#{client_id := ClientId, username := Username}, _ConnAck, _ConnAttrs, _Env) ->
-    % io:format("client ~s/~s will connected: ~w.~n", [ClientId, Username, ConnAck]),
+    io:format("client ~s/~s will connected: ~w.~n", [ClientId, Username, ConnAck]),
     Event = [{clientid, ClientId},
                 {username, Username},
                 {ts, timestamp()}],
@@ -60,7 +60,7 @@ on_client_connected(#{client_id := ClientId, username := Username}, _ConnAck, _C
     ok.
 
 on_client_disconnected(#{client_id := ClientId, username := Username}, _Reason, _Env) ->
-    % io:format("client ~s/~s will connected: ~w~n", [ClientId, Username, Reason]),
+    io:format("client ~s/~s will connected: ~w~n", [ClientId, Username, Reason]),
     Event = [{clientid, ClientId},
                 {username, Username},
                 {ts, timestamp()}],
@@ -68,7 +68,7 @@ on_client_disconnected(#{client_id := ClientId, username := Username}, _Reason, 
     ok.
 
 on_client_subscribe(#{client_id := ClientId, username := Username}, TopicTable, _Env) ->
-    % io:format("client(~s/~s) will subscribe: ~p~n", [Username, ClientId, TopicTable]),
+    io:format("client(~s/~s) will subscribe: ~p~n", [Username, ClientId, TopicTable]),
     Event = [{clientid, ClientId},
                 {username, Username},
                 {topic, TopicTable},
@@ -77,7 +77,7 @@ on_client_subscribe(#{client_id := ClientId, username := Username}, TopicTable, 
     {ok, TopicTable}.
     
 on_client_unsubscribe(#{client_id := ClientId, username := Username}, TopicTable, _Env) ->
-    % io:format("client(~s/~s) unsubscribe ~p~n", [ClientId, Username, TopicTable]),
+    io:format("client(~s/~s) unsubscribe ~p~n", [ClientId, Username, TopicTable]),
     Event = [{clientid, ClientId},
                 {username, Username},
                 {topic, TopicTable},
@@ -87,14 +87,14 @@ on_client_unsubscribe(#{client_id := ClientId, username := Username}, TopicTable
 
 on_session_created(#{client_id := ClientId}, SessAttrs, _Env) ->
     [_, _, _, {_, Username} | _] = SessAttrs,
-    % io:format("session(~s/~s) created~n", [ClientId, Username]),
+    io:format("session(~s/~s) created~n", [ClientId, Username]),
     Event = [{clientid, ClientId},
                 {username, Username},
                 {ts, timestamp()}],
     produce_kafka_session_created(Event).
 
 on_session_terminated(#{client_id := ClientId, username := Username}, _ReasonCode, _Env) ->
-    % io:format("Session(~s/~s) terminated: .", [ClientId, Username]),
+    io:format("Session(~s/~s) terminated: .", [ClientId, Username]),
     Event = [{clientid, ClientId},
                 {username, Username},
                 {ts, timestamp()}],
