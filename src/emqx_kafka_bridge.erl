@@ -241,7 +241,7 @@ produce_kafka_publish(Message) ->
 
 produce_kafka_connected(Message) ->
     [{_, Topic}] = ets:lookup(topic_table, kafka_connected_topic),
-    % io:format("send to kafka event topic: byte size: ~p~n", [byte_size(list_to_binary(Topic))]),
+    io:format("send to kafka event topic: byte size: ~p~n", [list_to_binary(Topic)]),
     % Payload = iolist_to_binary(mochijson2:encode(Message)),
     Payload = jsx:encode(Message),
     % ok = ekaf:produce_async(Topic, Payload),
