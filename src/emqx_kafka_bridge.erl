@@ -65,7 +65,7 @@ on_client_connected(#{client_id := ClientId, username := Username}, ConnAck, _Co
     ok.
 
 on_client_disconnected(#{client_id := ClientId, username := Username}, _Reason, _Env) ->
-    io:format("client ~s/~s will connected ~n", [ClientId, Username]),
+    io:format("client ~s/~s disconnected ~n", [ClientId, Username]),
     Event = [{clientid, ClientId},
                 {username, Username},
                 {ts, timestamp()}],
