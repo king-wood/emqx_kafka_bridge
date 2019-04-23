@@ -61,7 +61,7 @@ on_client_connected(#{client_id := ClientId, username := Username}, ConnAck, _Co
             produce_kafka_connected(Event);
         true ->
             io:format("client ~s/~s connected error ~p~n", [ClientId, Username, ConnAck])
-    end.
+    end,
     ok.
 
 on_client_disconnected(#{client_id := ClientId, username := Username}, _Reason, _Env) ->
