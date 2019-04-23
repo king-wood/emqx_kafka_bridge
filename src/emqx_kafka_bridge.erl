@@ -105,7 +105,7 @@ on_client_disconnected(#{client_id := ClientId, username := Username}, _Reason, 
 %                 {ts, timestamp()}],
 %     produce_kafka_session_terminated(Event).
 
-on_session_subscribed(#{client_id := ClientId, username := Username}, Topic, SubOpts, _Env) ->
+on_session_subscribed(#{client_id := ClientId, username := Username}, Topic, _SubOpts, _Env) ->
     % io:format("session(~s/~s) subscribed: ~p~n", [Username, ClientId, {Topic, SubOpts}]),
     Event = [{clientid, ClientId},
             {username, Username},
@@ -113,7 +113,7 @@ on_session_subscribed(#{client_id := ClientId, username := Username}, Topic, Sub
             {ts, timestamp()}],
     produce_kafka_subscribe(Event).
 
-on_session_unsubscribed(#{client_id := ClientId, username := Username}, Topic, Opts, _Env) ->
+on_session_unsubscribed(#{client_id := ClientId, username := Username}, Topic, _Opts, _Env) ->
     % io:format("session(~s/~s) unsubscribed: ~p~n", [Username, ClientId, {Topic, Opts}]),
     Event = [{clientid, ClientId},
                 {username, Username},
