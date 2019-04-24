@@ -1,8 +1,10 @@
 PROJECT = emqx_kafka_bridge
 PROJECT_DESCRIPTION = EMQ X Kafka Bridge
 
-DEPS = ekaf 
+DEPS = ekaf gpb grpc_client 
 dep_ekaf = git https://github.com/helpshift/ekaf master
+dep_gpb = git https://github.com/tomas-abrahamsson/gpb 4.7.2
+dep_grpc_client = git https://github.com/Bluehouse-Technology/grpc_client master
 
 BUILD_DEPS = emqx cuttlefish 
 dep_emqx = git https://github.com/emqx/emqx emqx30
