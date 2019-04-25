@@ -155,6 +155,7 @@ ekaf_init(_Env) ->
     {ok, BrokerValues} = application:get_env(emqx_kafka_bridge, broker),
     KafkaHost = proplists:get_value(host, BrokerValues),
     KafkaPort = proplists:get_value(port, BrokerValues),
+    io:format("connect to kafka ~s~n", [KafkaHost]),
     KafkaPartitionStrategy = proplists:get_value(partitionstrategy, BrokerValues),
     KafkaPartitionWorkers = proplists:get_value(partitionworkers, BrokerValues),
     %KafkaPayloadTopic = proplists:get_value(payloadtopic, BrokerValues),
