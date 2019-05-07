@@ -3,5 +3,5 @@
               {vsn,"git"},
               {modules,[]},
               {registered,[emqx_kafka_bridge_sup]},
-              {applications,[kernel,stdlib,gproc,kafkamocker,ekaf,ranch]},
+              {applications,[kernel,stdlib,gproc,kafkamocker,ekaf,ranch,thrift]},
               {mod,{emqx_kafka_bridge_app,[]}}]}. 
