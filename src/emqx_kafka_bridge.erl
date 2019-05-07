@@ -23,6 +23,8 @@
 
 -include_lib("emqx/include/emqx.hrl").
 
+-import(lists,[nth/2]). 
+
 -export([load/1, unload/0]).
 
 %% Hooks functions
@@ -129,7 +131,10 @@ on_message_publish(Message = #message{topic = <<"$SYS/", _/binary>>}, _Env) ->
 on_message_publish(Message, _Env) ->
     {ok, Payload} = format_payload(Message),
     produce_kafka_publish(Payload),
-    {ok, Message}.
+
+    {_, Value} = lists:nth(4, Payload),
+    Msg = Message#message{payload = Value},
+    {ok, Msg}.
 
 on_message_delivered(#{client_id := ClientId, username := Username}, Message, _Env) ->
     % io:format("delivered to client(~s/~s): ~s~n", [Username, ClientId, emqttd_message:format(Message)]),
@@ -199,12 +204,8 @@ format_payload(Message) ->
     Opts = [{framed, true}],
     [{_, MessageHost}] = ets:lookup(topic_table, message_host),
     [{_, MessagePort}] = ets:lookup(topic_table, message_port),
-    io:format("format_payload1(~s/~s) ~n", [MessageHost, MessagePort]),
     {ok, Client} = thrift_client_util:new(MessageHost, list_to_integer(MessagePort), generate_thrift, Opts),
-    io:format("format_payload2(~p) ~n", [{Client}]),
     {ClientAgain, {ok, {_, ResponseValue}}} = thrift_client:call(Client, do_generate, []),
-    io:format("format_payload3(~p) ~n", [{ClientAgain}]),
-    io:format("format_payload4(~p) ~n", [{ResponseValue}]),
     thrift_client:close(ClientAgain),
     JsonPayload2 = #{<<"payload">> => Message#message.payload, <<"message_id">> => ResponseValue},
     JsonPayload3 = jsx:encode(JsonPayload2),
@@ -214,6 +215,7 @@ format_payload(Message) ->
                   {payload, JsonPayload3},
                   {size, byte_size(Message#message.payload)},
                   {ts, emqx_time:now_secs(Message#message.timestamp)}],
+    io:format("format_payload(~p) ~n", [Payload]),
     {ok, Payload}.
 
 format_from({ClientId, Username}) ->
