@@ -1,8 +1,9 @@
 PROJECT = emqx_kafka_bridge
 PROJECT_DESCRIPTION = EMQ X Kafka Bridge
 
-DEPS = ekaf
+DEPS = ekaf thrift
 dep_ekaf = git https://github.com/helpshift/ekaf master
+dep_thrift = git https://github.com/Pilchards/thrift master
 
 
 BUILD_DEPS = emqx cuttlefish
