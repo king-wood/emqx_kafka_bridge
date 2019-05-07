@@ -198,6 +198,7 @@ ekaf_init(_Env) ->
     {ok, _} = application:ensure_all_started(ekaf).
 
 format_payload(Message) ->
+    io:format("format_payload--(~p) ~n", [Message]),
     {ClientId, Username} = format_from(Message#message.from),
     io:format("format_payload--(~s/~s) ~n", [ClientId, Username]),
     Opts = [{framed, true}],
