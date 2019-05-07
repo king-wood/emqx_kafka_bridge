@@ -23,10 +23,6 @@
 
 -include_lib("emqx/include/emqx.hrl").
 
-%add
--import(string,[concat/2]).
--import(lists,[nth/2]). 
-
 -export([load/1, unload/0]).
 
 %% Hooks functions
@@ -204,15 +200,15 @@ format_payload(Message) ->
     [{_, MessageHost}] = ets:lookup(topic_table, message_host),
     [{_, MessagePort}] = ets:lookup(topic_table, message_port),
     {ok, Client} = thrift_client_util:new(MessageHost, list_to_integer(MessagePort), generate_thrift, Opts),
-    {ClientAgain, {ok, {ResponseName, ResponseValue}}} = thrift_client:call(Client, do_generate, []),
+    {ClientAgain, {ok, {_, ResponseValue}}} = thrift_client:call(Client, do_generate, []),
     thrift_client:close(ClientAgain),
-    JsonPayload2 = #{<<"payload">> => Message#mqtt_message.payload, <<"message_id">> => ResponseValue},
+    JsonPayload2 = #{<<"payload">> => Message#message.payload, <<"message_id">> => ResponseValue},
     JsonPayload3 = jsx:encode(JsonPayload2),
     Payload = [{clientid, ClientId},
                   {username, Username},
-                  {topic, Message#mqtt_message.topic},
+                  {topic, Message#message.topic},
                   {payload, JsonPayload3},
-                  {size, byte_size(Message#mqtt_message.payload)},
+                  {size, byte_size(Message#message.payload)},
                   {ts, emqttd_time:now_secs(Message#mqtt_message.timestamp)}],
     {ok, Payload}.
 
