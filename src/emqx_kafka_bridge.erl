@@ -19,8 +19,13 @@
 -module(emqx_kafka_bridge).
 
 -include("emqx_kafka_bridge.hrl").
+-include("id_generate_constants.hrl").
 
 -include_lib("emqx/include/emqx.hrl").
+
+%add
+-import(string,[concat/2]).
+-import(lists,[nth/2]). 
 
 -export([load/1, unload/0]).
 
@@ -168,6 +173,8 @@ ekaf_init(_Env) ->
     KafkaDeliveredTopic = proplists:get_value(deliveredtopic, BrokerValues),
     % KafkaSessionCreatedTopic = proplists:get_value(sessioncreatedtopic, BrokerValues),
     % KafkaSessionTerminatedTopic = proplists:get_value(sessionterminatedtopic, BrokerValues),
+    MessageHost = proplists:get_value(messagehost, BrokerValues),
+    MessagePort = proplists:get_value(messageport, BrokerValues),
     application:set_env(ekaf, ekaf_bootstrap_broker, {KafkaHost, list_to_integer(KafkaPort)}),
     application:set_env(ekaf, ekaf_partition_strategy, list_to_atom(KafkaPartitionStrategy)),
     application:set_env(ekaf, ekaf_per_partition_workers, KafkaPartitionWorkers),
@@ -181,7 +188,8 @@ ekaf_init(_Env) ->
     ets:insert(topic_table, {kafka_subscribe_topic, KafkaSubscribeTopic}),
     ets:insert(topic_table, {kafka_unsubscribe_topic, KafkaUnsubscribeTopic}),
     ets:insert(topic_table, {kafka_delivered_topic, KafkaDeliveredTopic}),
-
+    ets:insert(topic_table, {message_host, MessageHost}),
+    ets:insert(topic_table, {message_port, MessagePort}),
     % ets:insert(topic_table, {kafka_session_created_topic, KafkaSessionCreatedTopic}),
     % ets:insert(topic_table, {kafka_session_terminated_topic, KafkaSessionTerminatedTopic}),
 
@@ -192,12 +200,20 @@ ekaf_init(_Env) ->
 
 format_payload(Message) ->
     {ClientId, Username} = format_from(Message#message.from),
+    Opts = [{framed, true}],
+    [{_, MessageHost}] = ets:lookup(topic_table, message_host),
+    [{_, MessagePort}] = ets:lookup(topic_table, message_port),
+    {ok, Client} = thrift_client_util:new(MessageHost, list_to_integer(MessagePort), generate_thrift, Opts),
+    {ClientAgain, {ok, {ResponseName, ResponseValue}}} = thrift_client:call(Client, do_generate, []),
+    thrift_client:close(ClientAgain),
+    JsonPayload2 = #{<<"payload">> => Message#mqtt_message.payload, <<"message_id">> => ResponseValue},
+    JsonPayload3 = jsx:encode(JsonPayload2),
     Payload = [{clientid, ClientId},
                   {username, Username},
-                  {topic, Message#message.topic},
-                  {payload, Message#message.payload},
-                  {size, byte_size(Message#message.payload)},
-                  {ts, emqx_time:now_secs(Message#message.timestamp)}],
+                  {topic, Message#mqtt_message.topic},
+                  {payload, JsonPayload3},
+                  {size, byte_size(Message#mqtt_message.payload)},
+                  {ts, emqttd_time:now_secs(Message#mqtt_message.timestamp)}],
     {ok, Payload}.
 
 format_from({ClientId, Username}) ->

@@ -70,6 +70,26 @@
   {datatype, string}
 ]}.
 
+{mapping, "kafka.fluentdhost", "emqx_kafka_bridge.broker", [
+  {default, "localhost"},
+  {datatype, string}
+]}.
+
+{mapping, "kafka.fluentdport", "emqx_kafka_bridge.broker", [
+  {default, "4000"},
+  {datatype, string}
+]}.
+
+{mapping, "kafka.messagehost", "emqx_kafka_bridge.broker", [
+  {default, "localhost"},
+  {datatype, string}
+]}.
+
+{mapping, "kafka.messageport", "emqx_kafka_bridge.broker", [
+  {default, "4000"},
+  {datatype, string}
+]}.
+
 {translation, "emqx_kafka_bridge.broker", fun(Conf) ->
   KafkaHost = cuttlefish:conf_get("kafka.host", Conf),
   KafkaPort = cuttlefish:conf_get("kafka.port", Conf),
@@ -85,5 +105,9 @@
   KafkaEventTopic = cuttlefish:conf_get("kafka.eventtopic", Conf),
   KafkaSessionCreatedTopic = cuttlefish:conf_get("kafka.sessioncreatedtopic", Conf),
   KafkaSessionTerminatedTopic = cuttlefish:conf_get("kafka.sessionterminatedtopic", Conf),
-  [{sessioncreatedtopic, KafkaSessionCreatedTopic}, {sessionterminatedtopic, KafkaSessionTerminatedTopic}, {host, KafkaHost}, {port, KafkaPort}, {partitionstrategy, KafkaPartitionStrategy}, {partitionworkers, KafkaPartitionWorkers}, {eventtopic, KafkaEventTopic}, {payloadtopic, KafkaPayloadTopic}, {publishtopic, KafkaPublishTopic}, {connectedtopic, KafkaConnectedTopic}, {disconnectedtopic, KafkaDisconnectedTopic}, {subscribetopic, KafkaSubscribeTopic}, {unsubscribetopic, KafkaUnsubscribeTopic}, {deliveredtopic, KafkaDeliveredTopic}]
+  FluentdHost = cuttlefish:conf_get("kafka.fluentdhost", Conf),
+  FluentdPort = cuttlefish:conf_get("kafka.fluentdport", Conf),
+  MessageHost = cuttlefish:conf_get("kafka.messagehost", Conf),
+  MessagePort = cuttlefish:conf_get("kafka.messageport", Conf),
+  [{sessioncreatedtopic, KafkaSessionCreatedTopic}, {sessionterminatedtopic, KafkaSessionTerminatedTopic}, {host, KafkaHost}, {port, KafkaPort}, {partitionstrategy, KafkaPartitionStrategy}, {partitionworkers, KafkaPartitionWorkers}, {eventtopic, KafkaEventTopic}, {payloadtopic, KafkaPayloadTopic}, {publishtopic, KafkaPublishTopic}, {connectedtopic, KafkaConnectedTopic}, {disconnectedtopic, KafkaDisconnectedTopic}, {subscribetopic, KafkaSubscribeTopic}, {unsubscribetopic, KafkaUnsubscribeTopic}, {deliveredtopic, KafkaDeliveredTopic}, {fluentdhost, FluentdHost}, {fluentdport, FluentdPort}, {messagehost, MessageHost}, {messageport, MessagePort}]
   end}.
