@@ -23,8 +23,6 @@
 
 -include_lib("emqx/include/emqx.hrl").
 
--import(lists,[nth/2]). 
-
 -export([load/1, unload/0]).
 
 %% Hooks functions
