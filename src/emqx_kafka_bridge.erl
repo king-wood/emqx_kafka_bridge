@@ -203,17 +203,39 @@ format_payload(Message) ->
     Opts = [{framed, true}],
     [{_, MessageHost}] = ets:lookup(topic_table, message_host),
     [{_, MessagePort}] = ets:lookup(topic_table, message_port),
-    {ok, Client} = thrift_client_util:new(MessageHost, list_to_integer(MessagePort), generate_thrift, Opts),
-    {ClientAgain, {ok, {_, ResponseValue}}} = thrift_client:call(Client, do_generate, []),
-    thrift_client:close(ClientAgain),
-    JsonPayload2 = #{<<"payload">> => Message#message.payload, <<"message_id">> => ResponseValue},
-    JsonPayload3 = jsx:encode(JsonPayload2),
-    Payload = [{clientid, ClientId},
-                  {username, Username},
-                  {topic, Message#message.topic},
-                  {payload, JsonPayload3},
-                  {size, byte_size(Message#message.payload)},
-                  {ts, emqx_time:now_secs(Message#message.timestamp)}],
+    if
+        "root" == Username ->
+            case string:str(binary_to_list(Message#message.payload), "message_id") /= 0 of
+                    true ->
+                        JsonPayload4 = jsx:decode(Message#message.payload, [return_maps]),
+                        JsonPayload5 = maps:get(<<"payload">>, JsonPayload4),
+                        Payload = [{clientid, ClientId},
+                          {username, Username},
+                          {topic, Message#message.topic},
+                          {payload, JsonPayload5},
+                          {size, byte_size(JsonPayload5)},
+                          {ts, emqx_time:now_secs(Message#message.timestamp)}];
+                    false ->
+                        Payload = [{clientid, ClientId},
+                          {username, Username},
+                          {topic, Message#message.topic},
+                          {payload, Message#message.payload},
+                          {size, byte_size(Message#message.payload)},
+                          {ts, emqx_time:now_secs(Message#message.timestamp)}]
+            end;
+        "root" /= Username ->
+            {ok, Client} = thrift_client_util:new(MessageHost, list_to_integer(MessagePort), generate_thrift, Opts),
+            {ClientAgain, {ok, {ResponseName, ResponseValue}}} = thrift_client:call(Client, do_generate, []),
+            thrift_client:close(ClientAgain),
+            JsonPayload2 = #{<<"payload">> => Message#message.payload, <<"message_id">> => ResponseValue},
+            JsonPayload3 = jsx:encode(JsonPayload2),
+            Payload = [{clientid, ClientId},
+                          {username, Username},
+                          {topic, Message#message.topic},
+                          {payload, JsonPayload3},
+                          {size, byte_size(Message#message.payload)},
+                          {ts, emqx_time:now_secs(Message#message.timestamp)}]
+    end,
     {ok, Payload}.
 
 %% Called when the plugin application stop
