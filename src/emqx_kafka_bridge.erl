@@ -198,7 +198,8 @@ ekaf_init(_Env) ->
     {ok, _} = application:ensure_all_started(ekaf).
 
 format_payload(Message) ->
-    io:format("format_payload--(~p) ~n", [Message]),
+    io:format("format_payload-message(~p) ~n", [Message]),
+    io:format("format_payload-from(~p) ~n", [Message#message.from]),
     {ClientId, Username} = format_from(Message#message.from),
     io:format("format_payload--(~s/~s) ~n", [ClientId, Username]),
     Opts = [{framed, true}],
@@ -218,13 +219,14 @@ format_payload(Message) ->
     io:format("format_payload(~p) ~n", [Payload]),
     {ok, Payload}.
 
-format_from(#message{from = ClientId, headers = #{username := Username}}) ->
-    {a2b(ClientId), a2b(Username)};
-format_from(#message{from = ClientId, headers = _HeadersNoUsername}) ->
-    {a2b(ClientId), <<"undefined">>}.
+format_from({ClientId, Username}) ->
+    {ClientId, Username};
+format_from(From) when is_atom(From) ->
+    {a2b(From), a2b(From)};
+format_from(_) ->
+    {<<>>, <<>>}.
 
-a2b(A) when is_atom(A) -> erlang:atom_to_binary(A, utf8);
-a2b(A) -> A.
+a2b(A) -> erlang:atom_to_binary(A, utf8).
 
 %% Called when the plugin application stop
 unload() ->
