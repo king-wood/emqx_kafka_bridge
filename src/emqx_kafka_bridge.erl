@@ -209,7 +209,7 @@ format_payload(Message) ->
                   {topic, Message#message.topic},
                   {payload, JsonPayload3},
                   {size, byte_size(Message#message.payload)},
-                  {ts, emqttd_time:now_secs(Message#mqtt_message.timestamp)}],
+                  {ts, emqttd_time:now_secs(Message#message.timestamp)}],
     {ok, Payload}.
 
 format_from({ClientId, Username}) ->
