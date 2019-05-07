@@ -213,7 +213,6 @@ format_payload(Message) ->
                   {payload, JsonPayload3},
                   {size, byte_size(Message#message.payload)},
                   {ts, emqx_time:now_secs(Message#message.timestamp)}],
-    io:format("format_payload(~p) ~n", [Payload]),
     {ok, Payload}.
 
 format_from({ClientId, Username}) ->
