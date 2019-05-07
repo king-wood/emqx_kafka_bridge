@@ -200,9 +200,9 @@ ekaf_init(_Env) ->
 format_payload(Message) ->
     io:format("format_payload-message(~p) ~n", [Message]),
     io:format("format_payload-from(~p) ~n", [Message#message.from]),
-    ClientId = binary_to_list(Message#message.from, utf8),
+    ClientId = binary_to_list(Message#message.from),
     io:format("format_payload-ClientId(~s) ~n", [ClientId]),
-    Username = binary_to_list(maps:get(username, Message#message.headers), utf8),
+    Username = binary_to_list(maps:get(username, Message#message.headers)),
     io:format("format_payload--(~s/~s) ~n", [ClientId, Username]),
     Opts = [{framed, true}],
     [{_, MessageHost}] = ets:lookup(topic_table, message_host),
