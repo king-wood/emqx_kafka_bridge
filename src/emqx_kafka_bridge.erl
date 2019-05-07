@@ -225,7 +225,7 @@ format_payload(Message) ->
             end;
         "root" /= Username ->
             {ok, Client} = thrift_client_util:new(MessageHost, list_to_integer(MessagePort), generate_thrift, Opts),
-            {ClientAgain, {ok, {ResponseName, ResponseValue}}} = thrift_client:call(Client, do_generate, []),
+            {ClientAgain, {ok, {_, ResponseValue}}} = thrift_client:call(Client, do_generate, []),
             thrift_client:close(ClientAgain),
             JsonPayload2 = #{<<"payload">> => Message#message.payload, <<"message_id">> => ResponseValue},
             JsonPayload3 = jsx:encode(JsonPayload2),
