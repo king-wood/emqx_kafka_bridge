@@ -200,7 +200,8 @@ ekaf_init(_Env) ->
 format_payload(Message) ->
     io:format("format_payload-message(~p) ~n", [Message]),
     io:format("format_payload-from(~p) ~n", [Message#message.from]),
-    {ClientId, Username} = format_from(Message#message.from),
+    ClientId = erlang:binary_to_list(Message#message.from, utf8),
+    Username = erlang:binary_to_list(maps.get(username, Message#message.headers), utf8),
     io:format("format_payload--(~s/~s) ~n", [ClientId, Username]),
     Opts = [{framed, true}],
     [{_, MessageHost}] = ets:lookup(topic_table, message_host),
@@ -218,15 +219,6 @@ format_payload(Message) ->
                   {ts, emqx_time:now_secs(Message#message.timestamp)}],
     io:format("format_payload(~p) ~n", [Payload]),
     {ok, Payload}.
-
-format_from({ClientId, Username}) ->
-    {ClientId, Username};
-format_from(From) when is_atom(From) ->
-    {a2b(From), a2b(From)};
-format_from(_) ->
-    {<<>>, <<>>}.
-
-a2b(A) -> erlang:atom_to_binary(A, utf8).
 
 %% Called when the plugin application stop
 unload() ->
