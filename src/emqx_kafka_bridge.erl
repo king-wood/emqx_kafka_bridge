@@ -236,7 +236,7 @@ format_payload(Message) ->
                           {size, byte_size(Message#message.payload)},
                           {ts, emqx_time:now_secs(Message#message.timestamp)}]
     end,
-    io:format("client(~s/~s) publish: ~s~n", [Username, ClientId, emqx_message:format(Payload)]),
+    io:format("client(~s/~s) publish~n", [Username, ClientId]),
     {ok, Payload}.
 
 %% Called when the plugin application stop
