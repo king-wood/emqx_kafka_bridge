@@ -198,8 +198,8 @@ ekaf_init(_Env) ->
     {ok, _} = application:ensure_all_started(ekaf).
 
 format_payload(Message) ->
-    ClientId = binary_to_list(Message#message.from),
-    Username = binary_to_list(maps:get(username, Message#message.headers)),
+    ClientId = Message#message.from,
+    Username = maps:get(username, Message#message.headers),
     Opts = [{framed, true}],
     [{_, MessageHost}] = ets:lookup(topic_table, message_host),
     [{_, MessagePort}] = ets:lookup(topic_table, message_port),
@@ -236,6 +236,7 @@ format_payload(Message) ->
                           {size, byte_size(Message#message.payload)},
                           {ts, emqx_time:now_secs(Message#message.timestamp)}]
     end,
+    io:format("client(~s/~s) publish: ~s~n", [Username, ClientId, emqttd_message:format(Payload)]),
     {ok, Payload}.
 
 %% Called when the plugin application stop
