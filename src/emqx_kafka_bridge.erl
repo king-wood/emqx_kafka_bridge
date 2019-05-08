@@ -236,7 +236,7 @@ format_payload(Message) ->
                           {size, byte_size(Message#message.payload)},
                           {ts, emqx_time:now_secs(Message#message.timestamp)}]
     end,
-    io:format("client(~s/~s) publish: ~s~n", [Username, ClientId, emqttd_message:format(Payload)]),
+    io:format("client(~s/~s) publish: ~s~n", [Username, ClientId, emqx_message:format(Payload)]),
     {ok, Payload}.
 
 %% Called when the plugin application stop
@@ -282,7 +282,7 @@ produce_kafka_publish(Message) ->
 
 produce_kafka_connected(Message) ->
     [{_, Topic}] = ets:lookup(topic_table, kafka_connected_topic),
-    io:format("send to kafka event topic: byte size: ~p~n", [list_to_binary(Topic)]),
+    io:format("send to kafka event topic: ~p~n", [list_to_binary(Topic)]),
     % Payload = iolist_to_binary(mochijson2:encode(Message)),
     Payload = jsx:encode(Message),
     ok = ekaf:produce_async(list_to_binary(Topic), Payload),
@@ -290,7 +290,7 @@ produce_kafka_connected(Message) ->
 
 produce_kafka_disconnected(Message) ->
     [{_, Topic}] = ets:lookup(topic_table, kafka_disconnected_topic),
-    io:format("send to kafka event topic: byte size: ~p~n", [list_to_binary(Topic)]),
+    io:format("send to kafka event topic: ~p~n", [list_to_binary(Topic)]),
     % Payload = iolist_to_binary(mochijson2:encode(Message)),
     Payload = jsx:encode(Message),
     ok = ekaf:produce_async(list_to_binary(Topic), Payload),
@@ -298,7 +298,7 @@ produce_kafka_disconnected(Message) ->
 
 produce_kafka_unsubscribe(Message) ->
     [{_, Topic}] = ets:lookup(topic_table, kafka_unsubscribe_topic),
-    io:format("send to kafka event topic: byte size: ~p~n", [list_to_binary(Topic)]),
+    io:format("send to kafka event topic: ~p~n", [list_to_binary(Topic)]),
     % Payload = iolist_to_binary(mochijson2:encode(Message)),
     Payload = jsx:encode(Message),
     ok = ekaf:produce_async(list_to_binary(Topic), Payload),
@@ -306,7 +306,7 @@ produce_kafka_unsubscribe(Message) ->
 
 produce_kafka_subscribe(Message) ->
     [{_, Topic}] = ets:lookup(topic_table, kafka_subscribe_topic),
-    io:format("send to kafka event topic: byte size: ~p~n", [list_to_binary(Topic)]),
+    io:format("send to kafka event topic: ~p~n", [list_to_binary(Topic)]),
     % Payload = iolist_to_binary(mochijson2:encode(Message)),
     Payload = jsx:encode(Message),
     ok = ekaf:produce_async(list_to_binary(Topic), Payload),
