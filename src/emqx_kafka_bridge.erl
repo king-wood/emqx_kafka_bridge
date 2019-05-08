@@ -204,7 +204,7 @@ format_payload(Message) ->
     [{_, MessageHost}] = ets:lookup(topic_table, message_host),
     [{_, MessagePort}] = ets:lookup(topic_table, message_port),
     if
-        "root" == Username ->
+        <<"root">> == Username ->
             case string:str(binary_to_list(Message#message.payload), "message_id") /= 0 of
                     true ->
                         JsonPayload4 = jsx:decode(Message#message.payload, [return_maps]),
@@ -223,7 +223,7 @@ format_payload(Message) ->
                           {size, byte_size(Message#message.payload)},
                           {ts, emqx_time:now_secs(Message#message.timestamp)}]
             end;
-        "root" /= Username ->
+        <<"root">> /= Username ->
             {ok, Client} = thrift_client_util:new(MessageHost, list_to_integer(MessagePort), generate_thrift, Opts),
             {ClientAgain, {ok, {_, ResponseValue}}} = thrift_client:call(Client, do_generate, []),
             thrift_client:close(ClientAgain),
